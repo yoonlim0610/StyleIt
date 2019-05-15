@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 마이바티스 3 Mapper DOCTYPE -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <!-- 매퍼 설정 -->
+  <mapper namespace="web.dao.face.MypageDao">
+	
+	<select id="getUserInfo" parameterType="web.dto.Member" resultType="web.dto.Member">
+	
+	  select * from member m, FileUpload f
+	  where m.fu_no = f.fu_no and m_no=#{m_no }
+	  
+	</select>
+	
+	<select id="checkPass" resultType="int" parameterType="web.dto.Member">
+	
+		SELECT COUNT(*) FROM member
+  		WHERE m_email = #{m_email } AND m_pw = #{m_pw }
+	
+	</select>
+	
+	<update id="changePass" parameterType="web.dto.Member">
+	
+		UPDATE member
+  		SET m_pw = #{m_pw }
+  		WHERE m_no = #{m_no }
+		
+	</update>
+	<update id="changeNick" parameterType="web.dto.Member">
+	
+		UPDATE member
+  		SET m_nick = #{m_nick }
+  		WHERE m_no = #{m_no }
+		
+	</update>
+	
+	<!-- 다음 번호 미리 받아오기 -->
+	<select id="dualNo" resultType="int">
+	
+		SELECT FileUpload_SEQ.nextval from dual
+	
+	</select>
+	
+	<insert id="insertImg" parameterType="web.dto.FileUpload">
+		
+		<!-- SELECT FileUpload_SEQ.nextval from dual -->
+		
+		INSERT INTO FILEUPLOAD
+			(fu_no, fu_storedName, fut_no )
+		VALUES 
+			( #{fu_no}, #{fu_storedName }, 5 )
+		<!-- <selectKey>  </selectKey> -->
+			
+	</insert>
+	
+	<update id="updateUserImg" parameterType="web.dto.Member">
+      
+		UPDATE member
+  		SET fu_no = #{fu_no }
+  		WHERE m_no = #{m_no }
+		
+	</update>
+	
+	<update id="deleteUser" parameterType="web.dto.Member">
+      
+		UPDATE member
+  		SET m_valid = 'N'
+  		WHERE m_no = #{m_no }
+		
+	</update>
+	
+	<select id="getFollower" resultType="int" parameterType="web.dto.Member">
+		 
+		 select count(*) from member m, Follow f
+     	 where  m.m_no = f.follower_no and m_no = #{m_no }
+	
+	</select>
+	
+	<select id="getFollowee" resultType="int" parameterType="web.dto.Member">
+		 
+		 select count(*) from member m, Follow f
+     	 where  m.m_no = f.followee_no and m_no = #{m_no }
+	
+	</select>
+	
+	<select id="getCoStyling" resultType="int" parameterType="web.dto.Member">
+	
+		select count(*) from member m, Styling s
+      	where m.m_no = s.m_no and m.m_no = #{m_no }
+      		
+	</select>
+
+	<select id="getCoCollection" resultType="int" parameterType="web.dto.Member">
+	
+		select count(*) from member m, CollectionFolder cf
+      	where m.m_no = cf.m_no and m.m_no = #{m_no }
+      		
+	</select>
+	
+	<select id="getCoLike" resultType="int" parameterType="web.dto.Member">
+	
+	    select count(*) from member m, StylingLike sl, ProductLike pl
+        where m.m_no = sl.m_no and m.m_no = pl.m_no and m.m_no = #{m_no }
+      		
+	</select>
+
+	<select id="selectProductLike" parameterType="int" resultType="web.dto.ProductLike">
+		SELECT p_no, m_no, plike_date FROM productlike
+	</select>
+	
+	<select id="selectMemberQuiz" parameterType="int" resultType="web.dto.MemberQuiz">
+		SELECT 	* FROM memberquiz
+		WHERE m_no = #{m_no }
+	</select>
+	
+  
+  	<select id="recommendProduct" parameterType="web.dto.MemberQuizSet" resultType="web.dto.Product">
+  	<![CDATA[
+  		SELECT * FROM (
+			WITH ratings AS(
+    			SELECT 
+			        p.p_no,
+			        p.p_gender,
+			        p.p_price,
+			        p.p_name,
+			        p.pca_no,
+			        p.pb_no,
+			        p.po_no,
+			        p.ps_no,
+			        p.pp_no, 
+			        0.8*(CASE WHEN p.po_no= #{po_no }    THEN 1 ELSE 0 END)
+			        + 0.2*(CASE WHEN p.pb_no= #{pb_no }   THEN 1 ELSE 0 END)
+			        + 0.5*(CASE WHEN p.ps_no= #{ps_no }  THEN 1 ELSE 0 END)
+			        + 0.9*(CASE WHEN p.pca_no= #{pca_no } THEN 1 ELSE 0 END)
+			        + 0.5*(CASE WHEN p.p_price BETWEEN #{p_lowprice } AND #{p_highprice } THEN 1 ELSE 0 END)
+			        AS score
+			    FROM product p
+			    WHERE  p.p_gender= #{p_gender } AND p.pco_no!= #{pco_no } AND p.pp_no!= #{pp_no }
+			    GROUP BY  p.p_no, p.p_gender, p.p_price, p.p_name, p.pca_no, p.pb_no, p.po_no, p.ps_no, p.pp_no
+			) 
+			    SELECT * FROM ratings 
+			    ORDER BY score DESC
+			) WHERE ROWNUM <= 10
+			]]>  	
+  	</select>
+
+
+  
+
+  </mapper>
